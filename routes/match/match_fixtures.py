@@ -169,8 +169,11 @@ def get_match_fixtures():
                 'match_status': {
                     'winner_team_id': match.winner_team_id,
                     'is_final': match.is_final,
-                    'status': match.status
+                    'status': match.status,
+                    'outcome': match.outcome
                 },
+                'outcome': match.outcome,
+                'winner_team_id': match.winner_team_id,
                 'bracket_info': {
                     'round_number': match.round_number,
                     'bracket_position': match.bracket_position,

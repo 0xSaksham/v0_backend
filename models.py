@@ -96,6 +96,9 @@ class Match(db.Model):
     successor = db.Column(db.Integer, db.ForeignKey('match.id'), nullable=True)
     bracket_position = db.Column(db.Integer, nullable=True)
     round_number = db.Column(db.Integer, nullable=True)
+    outcome = db.Column(db.String(30), default='REGULAR', nullable=False)
+    conceded_by_team_id = db.Column(db.String(50), nullable=True)
+    outcome_reason = db.Column(db.String(255), nullable=True)
 
 class Score(db.Model):
     id = db.Column(db.Integer, primary_key=True)

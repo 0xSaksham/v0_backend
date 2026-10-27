@@ -4,6 +4,7 @@ from models import Score, Match, db, Player, Team
 from . import score_bp
 from socket_instance import socketio
 from flask_cors import cross_origin
+from outcome_service import OutcomeRegistry
 
 def update_successor_match(successor_match_id, current_match_id, winning_team_id):
     """Updates the successor match with the winning team"""
@@ -53,14 +54,20 @@ def update_score():
     tournament_id = data.get('tournament_id')
     final = data.get('final', False)
     override = data.get('override', False)
+    outcome_type = (data.get('outcome') or 'REGULAR').upper()
     
     print(f"Processing update for match_id={match_id}, score={score_input}, final={final}")
 
-    if not all(k in data for k in ['match_id', 'score', 'tournament_id']):
-        return jsonify({"error": "match_id, score, and tournament_id are required"}), 400
+    if not all(k in data for k in ['match_id', 'tournament_id']):
+        return jsonify({"error": "match_id and tournament_id are required"}), 400
 
     try:
-        team1_score, team2_score = map(int, score_input.split('-'))
+        if outcome_type == 'WALKOVER':
+            team1_score, team2_score = 0, 0
+        else:
+            if not score_input:
+                raise ValueError
+            team1_score, team2_score = map(int, score_input.split('-'))
         print(f"Parsed scores - team1: {team1_score}, team2: {team2_score}")
     except ValueError:
         print("Error: Invalid score format")
@@ -71,6 +78,11 @@ def update_score():
         if not match:
             print(f"Match not found with id: {match_id}")
             return jsonify({'error': 'Match not found'}), 404
+
+        try:
+            outcome_strategy = OutcomeRegistry.get(outcome_type)
+        except ValueError as error:
+            return jsonify({'error': str(error)}), 400
 
         print(f"Found match with team1_id={match.team1_id}, team2_id={match.team2_id}")
 
@@ -110,16 +122,11 @@ def update_score():
         else:
             team2_score_record.score = team2_score
 
-        # Update match final status and winner if final is True
-        if final:
+        # Resolve the outcome only when finalizing, except walkovers which are final by definition.
+        if final or outcome_type == 'WALKOVER':
+            outcome_strategy.resolve(match, data, team1_score, team2_score)
             match.is_final = True
-            # Determine winner
-            if team1_score > team2_score:
-                match.winner_team_id = match.team1_id
-            elif team2_score > team1_score:
-                match.winner_team_id = match.team2_id
-            else:
-                match.winner_team_id = None  # Draw
+            match.status = 'completed'
             print(f"Match finalized with winner_team_id: {match.winner_team_id}")
 
             if match.successor:
@@ -137,6 +144,8 @@ def update_score():
             'team2_id': match.team2_id,
             'team2_score': team2_score,
             'is_final': match.is_final,
+            'outcome': match.outcome,
+            'winner_team_id': match.winner_team_id,
             'tournament_id': tournament_id
         }
 
@@ -274,7 +283,10 @@ def get_match_score():
             },
             'status': match.status,
             'is_final': match.is_final,
-            'winner_team_id': match.winner_team_id
+            'winner_team_id': match.winner_team_id,
+            'outcome': match.outcome,
+            'conceded_by_team_id': match.conceded_by_team_id,
+            'outcome_reason': match.outcome_reason
         }
         
         return jsonify(response), 200
