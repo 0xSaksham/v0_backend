@@ -45,11 +45,10 @@ if __name__ == '__main__':
             port=5001,
             debug=False,
             use_reloader=True,
-            log_output=False,
+            log_output=True,
             allow_unsafe_werkzeug=True
         )
     except KeyboardInterrupt:
         print("\nShutting down gracefully...")
     except Exception as e:
         print(f"\nError starting server: {str(e)}")
-

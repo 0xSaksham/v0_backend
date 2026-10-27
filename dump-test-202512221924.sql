@@ -18,10 +18,10 @@ SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
 SET @@SESSION.SQL_LOG_BIN= 0;
 
 --
--- GTID state at the beginning of the backup 
+-- GTID state at the beginning of the backup
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '138a9b2d-de60-11f0-8506-92700261a531:1-193';
+-- SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '138a9b2d-de60-11f0-8506-92700261a531:1-193';
 
 --
 -- Table structure for table `match`
